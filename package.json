@@ -1,0 +1,28 @@
+{
+  "name": "prodbud",
+  "productName": "ProdBud",
+  "version": "0.1.0",
+  "description": "Always-on-top productivity widget with floating task timers that logs everything to Obsidian.",
+  "main": "src/main/main.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test",
+    "dist": "electron-builder --win"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "electron": "^44.4.5",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.prodbud.app",
+    "productName": "ProdBud",
+    "icon": "assets/icon.png",
+    "files": ["src/**/*", "assets/**/*", "config.yaml", "package.json"],
+    "win": { "target": ["nsis", "portable"] },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true }
+  }
+}

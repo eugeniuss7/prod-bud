@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:">
+  <title>ProdBud task</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="card.css">
+</head>
+<body>
+  <main id="root" class="panel card drag">
+    <button id="close" class="close ghost" title="Close (keeps it in Unfinished)"></button>
+    <div class="top">
+      <button id="finish" class="finish" title="Finish"></button>
+      <div id="char" class="char"></div>
+      <button id="pause" class="pause" title="Pause"></button>
+    </div>
+    <div class="rule"></div>
+    <div id="name" class="name"></div>
+    <div class="time"><span>Time</span><span id="timer" class="tnum">00:00:00</span></div>
+    <div id="bubble" class="bubble" hidden></div>
+  </main>
+  <script src="common.js"></script>
+  <script src="card.js"></script>
+</body>
+</html>

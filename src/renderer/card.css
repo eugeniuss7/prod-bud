@@ -1,0 +1,57 @@
+.card { height: 160px; padding: 10px 12px 8px; overflow: hidden; }
+.card.break { border-color: var(--break); }
+.card.paused { border-style: dashed; }
+
+.top { display: grid; grid-template-columns: 40px 1fr 40px; align-items: center; gap: 6px; }
+.top button { width: 40px; height: 40px; }
+.finish { color: var(--accent); }
+.char { height: 56px; display: flex; justify-content: center; }
+.char .motivator { width: 62px; }
+.card.break .char { color: var(--break); }
+
+.rule { height: 2px; background: var(--ink); margin: 8px -12px 6px; }
+.card.break .rule { background: var(--break); }
+
+.name {
+  text-align: center;
+  font-weight: 600;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.time { display: flex; justify-content: center; gap: 12px; margin-top: 4px; font-size: 16px; }
+.time span:first-child { color: var(--muted); }
+.card.paused .time #timer { color: var(--muted); }
+
+.close {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  color: var(--muted);
+  opacity: .45;
+}
+.close:hover { opacity: 1; }
+.close svg { width: 12px; height: 12px; }
+
+.bubble {
+  position: absolute;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  z-index: 1;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--chip);
+  border: 1.5px solid var(--ink);
+  border-radius: 8px;
+  padding: 1px 4px;
+  pointer-events: none;
+}
+.card.done .top button { visibility: hidden; }
+.card.done .time #timer { color: var(--accent); }

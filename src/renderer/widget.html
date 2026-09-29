@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:">
+  <title>Prod Bud</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="widget.css">
+</head>
+<body>
+  <main id="root" class="panel widget">
+    <header class="drag">
+      <h1>Prod Bud</h1>
+      <span id="vault-warn" class="vault-warn" hidden>⚠</span>
+      <button id="hide" class="ghost" title="Hide (reopen from tray)">–</button>
+    </header>
+
+    <section class="stats">
+      <div><label>Tasks done</label><b id="done" class="tnum">0</b></div>
+      <div class="sep"></div>
+      <div><label>Duration</label><b id="duration" class="tnum">0m</b></div>
+    </section>
+
+    <section id="presets" class="presets"></section>
+
+    <section class="mid">
+      <form id="start-form">
+        <input id="task-name" placeholder="Task name" maxlength="80" autocomplete="off" spellcheck="false">
+        <button type="submit">Start task</button>
+      </form>
+      <button id="nap" class="nap" title="Nap: interrupts all running tasks">
+        <span id="nap-char" class="nap-char"></span>
+        <span id="nap-label" class="nap-label tnum">Nap</span>
+      </button>
+    </section>
+
+    <section id="resume-offer" class="resume-offer" hidden>
+      <span id="resume-text"></span>
+      <div>
+        <button id="resume-all">Resume all</button>
+        <button id="resume-later" class="ghost">Later</button>
+      </div>
+    </section>
+
+    <section class="stats bottom">
+      <div><label>Break time</label><b id="break" class="tnum">0m</b></div>
+      <div class="sep"></div>
+      <div>
+        <label>Unfinished</label>
+        <b class="unfinished"><span id="unfinished-count" class="tnum">0</span>
+          <button id="toggle-list" class="mini" title="Show unfinished tasks" aria-expanded="false"></button></b>
+      </div>
+    </section>
+
+    <ul id="unfinished-list" class="unfinished-list" hidden></ul>
+  </main>
+  <script src="common.js"></script>
+  <script src="widget.js"></script>
+</body>
+</html>
