@@ -17,6 +17,12 @@ function startOfDay(ms) {
   return d.getTime();
 }
 
+function nextMidnight(ms) {
+  const d = new Date(ms);
+  d.setHours(24, 0, 0, 0);
+  return d.getTime();
+}
+
 function makeId(ms) {
   const d = new Date(ms);
   const date = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
@@ -58,6 +64,7 @@ class Store extends EventEmitter {
   // ---- commands -------------------------------------------------------------
 
   start({ name, kind = 'work', category = 'general', icon = null, presetId = null }) {
+    this._rollover();
     name = String(name || '').trim();
     if (!name) throw new Error('Task name is required');
     const now = this.now();
@@ -84,6 +91,7 @@ class Store extends EventEmitter {
   }
 
   pause(id) {
+    this._rollover();
     const task = this.get(id);
     if (!task || task.status !== 'running') return;
     this._close(task);
@@ -93,6 +101,7 @@ class Store extends EventEmitter {
   }
 
   resume(id) {
+    this._rollover();
     const task = this.get(id);
     if (!task || !['paused', 'unfinished'].includes(task.status)) return;
     this._activate(task);
@@ -106,6 +115,7 @@ class Store extends EventEmitter {
   }
 
   finish(id) {
+    this._rollover();
     const task = this.get(id);
     if (!task || !['running', 'paused', 'unfinished'].includes(task.status)) return;
     this._close(task);
@@ -123,6 +133,7 @@ class Store extends EventEmitter {
 
   // Card closed without finishing.
   closeCard(id) {
+    this._rollover();
     const task = this.get(id);
     if (!task || !['running', 'paused'].includes(task.status)) return;
     this._unfinish(task, 'closed');
@@ -130,6 +141,7 @@ class Store extends EventEmitter {
   }
 
   discard(id) {
+    this._rollover();
     const task = this.get(id);
     if (!task || task.status !== 'unfinished') return;
     this.state.tasks = this.state.tasks.filter((t) => t.id !== id);
@@ -138,6 +150,7 @@ class Store extends EventEmitter {
   }
 
   toggleNap() {
+    this._rollover();
     if (this.state.nap) {
       this._endNap();
     } else {
@@ -149,6 +162,7 @@ class Store extends EventEmitter {
   }
 
   resumeAll() {
+    this._rollover();
     const ids = this.state.pendingResume;
     this.state.pendingResume = [];
     for (const id of ids) {
@@ -174,7 +188,8 @@ class Store extends EventEmitter {
   // Periodic housekeeping. Returns true if state changed.
   tick() {
     const now = this.now();
-    let changed = this._rollover(startOfDay(now));
+    const rolled = this._rollover();
+    let changed = false;
     const limit = this.autoUnfinishMin * MIN_MS;
     if (limit > 0) {
       for (const task of this.byStatus('paused')) {
@@ -193,7 +208,7 @@ class Store extends EventEmitter {
       changed = true;
     }
     if (changed) this._changed();
-    return changed;
+    return rolled || changed;
   }
 
   // ---- view model ------------------------------------------------------------
@@ -265,30 +280,52 @@ class Store extends EventEmitter {
     if (last && !last[1]) last[1] = iso(at);
   }
 
-  // At midnight, anything not done from a previous day (running, paused or unfinished) is
-  // marked done as-is, with time cut at 00:00, so each day's log is final. A nap is ended too.
-  _rollover(midnight) {
+  // Day boundary. Every task left over from a previous day is marked done (reason "midnight") so it
+  // is logged under the day it happened. A task that was running is split: it's closed at 00:00
+  // and the same task restarts at 00:00 as a new entry for the new day. A nap just carries on.
+  // Runs before every command and on each tick, so no logged entry ever spans midnight.
+  _rollover() {
+    const today = startOfDay(this.now());
     let changed = false;
-    const nap = this.state.nap;
-    if (nap && Date.parse(nap.start) < midnight) {
-      this._endNap(midnight);
-      changed = true;
-    }
     for (const task of this.byStatus('running', 'paused', 'unfinished')) {
-      const lastStart = Date.parse(task.segments[task.segments.length - 1][0]);
-      if (lastStart >= midnight) continue;
-      this._close(task, midnight);
-      task.status = 'done';
-      task.reason = 'midnight';
-      task.pausedAt = null;
-      task.finishedAt = iso(midnight - 1);
-      this._log(task);
-      changed = true;
+      let current = task;
+      while (Date.parse(current.segments[current.segments.length - 1][0]) < today) {
+        const midnight = nextMidnight(Date.parse(current.segments[current.segments.length - 1][0]));
+        const wasRunning = current.status === 'running';
+        this._close(current, midnight);
+        current.status = 'done';
+        current.reason = 'midnight';
+        current.pausedAt = null;
+        current.finishedAt = iso(midnight - 1);
+        this._log(current);
+        changed = true;
+        if (!wasRunning) break;
+        current = this._continue(current, midnight);
+      }
     }
     if (changed) {
       this.state.pendingResume = this.state.pendingResume.filter((id) => this.get(id)?.status === 'unfinished');
+      this._changed();
     }
     return changed;
+  }
+
+  // A fresh running copy of `task` starting at `at` (same name, kind, category and card position).
+  _continue(task, at) {
+    const next = {
+      ...structuredClone(task),
+      id: makeId(at),
+      status: 'running',
+      reason: null,
+      segments: [[iso(at), null]],
+      createdAt: iso(at),
+      pausedAt: null,
+      finishedAt: null,
+      interrupted: [],
+      continuedFrom: task.id,
+    };
+    this.state.tasks.push(next);
+    return next;
   }
 
   _unfinish(task, reason) {

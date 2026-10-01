@@ -129,26 +129,44 @@ test('rejects empty names', () => {
   assert.throws(() => store.start({ name: '   ' }));
 });
 
-test('midnight rollover marks yesterday\'s tasks done and ends a nap at 00:00', () => {
-  const { store, clock, logs } = setup(); // 14:32
+test('midnight rollover: leftovers are marked done, running tasks restart at 00:00, naps carry on', () => {
+  const { store, clock } = setup(); // 14:32
   const unfinished = store.start({ name: 'A' });
   store.closeCard(unfinished.id);
   const paused = store.start({ name: 'B' });
   store.pause(paused.id);
+  const running = store.start({ name: 'C', category: 'study' });
+  store.setPos(running.id, { x: 5, y: 6 });
   clock.advance(9 * 60 + 20); // 23:52
-  store.toggleNap();
+  store.toggleNap(); // interrupts C
+  store.resume(running.id); // wakes up, C runs again
   clock.advance(10); // 00:02
   assert.equal(store.tick(), true);
-  for (const t of [unfinished, paused]) {
+  for (const t of [unfinished, paused, running]) {
     assert.equal(t.status, 'done');
     assert.equal(t.reason, 'midnight');
   }
-  assert.equal(store.state.nap, null);
-  const nap = logs.find((ev) => ev.kind === 'break');
-  assert.equal(nap.end, new Date(2026, 8, 30).toISOString());
+  const midnight = new Date(2026, 8, 30).getTime();
+  assert.equal(running.segments.at(-1)[1], new Date(midnight).toISOString());
+  const [next] = store.byStatus('running');
+  assert.equal(next.name, 'C');
+  assert.equal(next.category, 'study');
+  assert.deepEqual(next.pos, { x: 5, y: 6 });
+  assert.deepEqual(next.segments, [[new Date(midnight).toISOString(), null]]);
   const snap = store.snapshot();
   assert.equal(snap.stats.done, 0, "yesterday's tasks don't count today");
-  assert.equal(snap.tasks.length, 0);
+  assert.equal(snap.stats.workOpen[0], midnight);
+  assert.equal(snap.tasks.length, 1);
+});
+
+test('a task left running across several days is split per day', () => {
+  const { store, clock, logs } = setup(); // 14:32 on 9/29
+  store.start({ name: 'Forgot me' });
+  clock.advance(2 * 24 * 60); // 14:32 on 10/1
+  store.tick();
+  const days = logs.map((ev) => [ev.task.segments[0][0], ev.task.segments[0][1]].map((d) => new Date(d).getDate()));
+  assert.deepEqual(days, [[29, 30], [30, 1]]);
+  assert.equal(store.byStatus('running')[0].name, 'Forgot me');
 });
 
 test('tasks started today are left alone at rollover', () => {

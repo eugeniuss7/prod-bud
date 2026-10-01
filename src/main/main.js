@@ -141,8 +141,10 @@ function syncCards() {
   for (const [id, win] of cards) {
     if (active.has(id) || win.closing) continue;
     win.closing = true;
-    // Finished cards celebrate briefly; interrupted/closed ones vanish right away.
-    const delay = store.get(id)?.status === 'done' ? CELEBRATE_MS : 0;
+    // Finished cards celebrate briefly; interrupted/closed ones vanish right away, and so do
+    // midnight splits, whose continuation opens a new card in the same spot.
+    const task = store.get(id);
+    const delay = task?.status === 'done' && task.reason !== 'midnight' ? CELEBRATE_MS : 0;
     setTimeout(() => {
       cards.delete(id);
       if (!win.isDestroyed()) win.destroy();
@@ -316,10 +318,20 @@ if (!app.requestSingleInstanceLock()) {
     updateTray();
     registerHotkey();
 
-    // Housekeeping + a periodic refresh so day totals roll over at midnight.
-    setInterval(() => {
+    // Housekeeping + a periodic refresh, plus a tick right at midnight for the day rollover.
+    const tick = () => {
       if (!store.tick()) broadcast();
-    }, 30 * 1000);
+    };
+    setInterval(tick, 30 * 1000);
+    const scheduleMidnight = () => {
+      const next = new Date();
+      next.setHours(24, 0, 1, 0);
+      setTimeout(() => {
+        tick();
+        scheduleMidnight();
+      }, next - Date.now());
+    };
+    scheduleMidnight();
   });
 
   app.on('before-quit', () => {

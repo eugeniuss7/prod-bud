@@ -7,11 +7,13 @@
 # Leave empty to disable logging.
 vaultPath: ''
 
-# Folder inside the vault for the day logs ("prod_data 10-1-2026.md", one per day).
+# Folder inside the vault for the day logs ("prod_data 10-1-2026.md", one per date).
+# Only finished work tasks are logged; breaks are not.
 logFolder: ProdBud
 
 # Paused tasks become "unfinished" after this many minutes (0 = never).
-# At midnight, every task that isn't done is marked done and logged into that day's file.
+# At midnight, tasks that aren't done are marked done and logged into that day's file;
+# running tasks are also restarted at 00:00 for the new day.
 autoUnfinishMin: 30
 
 # The motivator nudges you after a task has been paused this long.
