@@ -7,16 +7,11 @@
 # Leave empty to disable logging.
 vaultPath: ''
 
-# Folder inside the vault for per-entry notes.
+# Folder inside the vault for the day logs ("prod_data 10-1-2026.md", one per day).
 logFolder: ProdBud
 
-# Append a one-line summary to each day's daily note (<folder>/YYYY-MM-DD.md).
-dailyNotes:
-  enabled: true
-  folder: ''             # e.g. 'Daily' if your daily notes live in a subfolder
-  heading: '## ProdBud Log'
-
 # Paused tasks become "unfinished" after this many minutes (0 = never).
+# At midnight, every task that isn't done is marked done and logged into that day's file.
 autoUnfinishMin: 30
 
 # The motivator nudges you after a task has been paused this long.

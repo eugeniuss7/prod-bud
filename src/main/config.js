@@ -11,7 +11,6 @@ const yaml = require('js-yaml');
 const DEFAULTS = {
   vaultPath: '',
   logFolder: 'ProdBud',
-  dailyNotes: { enabled: true, folder: '', heading: '## ProdBud Log' },
   autoUnfinishMin: 30,
   nudgeAfterMin: 10,
   hotkey: 'Control+Alt+P',
@@ -30,11 +29,7 @@ function loadConfig(file) {
   } catch (err) {
     console.error(`[prodbud] Could not read ${file}: ${err.message}`);
   }
-  const config = {
-    ...DEFAULTS,
-    ...raw,
-    dailyNotes: { ...DEFAULTS.dailyNotes, ...(raw.dailyNotes || {}) },
-  };
+  const config = { ...DEFAULTS, ...raw };
   config.presets = (Array.isArray(config.presets) ? config.presets : [])
     .filter((p) => p && p.id && p.name)
     .map((p) => ({

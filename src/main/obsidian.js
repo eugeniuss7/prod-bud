@@ -1,7 +1,8 @@
 'use strict';
-// Writes ProdBud entries into an Obsidian vault as plain Markdown (no plugin needed).
-//   <vault>/<logFolder>/<date> <HHmm> <name>.md   one Dataview-friendly note per task/break
-//   <vault>/<dailyNotes.folder>/<YYYY-MM-DD>.md   one summary line under "## ProdBud Log"
+// Writes ProdBud's log into an Obsidian vault as plain Markdown (no plugin needed).
+// One file per day: <vault>/<logFolder>/prod_data M-D-YYYY.md
+// Each finished task (and each break) is appended as one line; the frontmatter keeps
+// running day totals for Dataview.
 
 const fs = require('fs');
 const path = require('path');
@@ -16,6 +17,11 @@ const ymd = (ms) => {
   const d = new Date(ms);
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 };
+// "10/1/2026" style, as in the file name ("/" is not allowed in file names, so "-" there).
+const mdy = (ms, sep = '/') => {
+  const d = new Date(ms);
+  return [d.getMonth() + 1, d.getDate(), d.getFullYear()].join(sep);
+};
 
 function fmtMin(min) {
   if (min < 60) return `${min}m`;
@@ -24,12 +30,6 @@ function fmtMin(min) {
   return m ? `${h}h ${m}m` : `${h}h`;
 }
 
-function safeFileName(s) {
-  return s.replace(/[\\/:*?"<>|#^[\]]/g, '').replace(/\s+/g, ' ').trim().slice(0, 60) || 'Task';
-}
-
-// Quote YAML scalars unless they are obviously safe plain words.
-const yaml = (s) => (/^[A-Za-z][\w .'-]*$/.test(s) ? s : JSON.stringify(s));
 const tag = (s) => `#${String(s).trim().replace(/\s+/g, '-')}`;
 
 // Turn a store 'log' event into a flat entry.
@@ -45,8 +45,8 @@ function normalize(ev) {
       end,
       minutes: Math.round((end - start) / 60000),
       status: 'done',
+      reason: null,
       interrupted: ev.interruptedNames || [],
-      segments: [[ev.start, ev.end]],
     };
   }
   const t = ev.task;
@@ -65,108 +65,71 @@ function normalize(ev) {
     status: t.status,
     reason: t.reason,
     interrupted: ev.interruptedNames || [],
-    segments: closed,
   };
 }
 
-function fileName(e) {
-  return `${ymd(e.start)} ${hm(e.start).replace(':', '')} ${safeFileName(e.name)}.md`;
+// The day an entry belongs to. Midnight-closed entries end exactly at 00:00, which is still the previous day.
+const entryDay = (e) => Math.max(e.start, e.end - 1);
+
+function fileName(ms) {
+  return `prod_data ${mdy(ms, '-')}.md`;
 }
 
-function renderNote(e) {
-  const fm = ['---', `type: ${e.type}`];
-  if (e.type === 'task') {
-    fm.push(`task: ${yaml(e.name)}`, `category: ${yaml(e.category)}`);
-  } else {
-    fm.push(`source: ${yaml(e.source)}`);
-    if (e.source !== 'nap') fm.push(`task: ${yaml(e.name)}`);
-  }
-  fm.push(
-    `date: ${ymd(e.start)}`,
-    `start: "${hm(e.start)}"`,
-    `end: "${hm(e.end)}"`,
-    `duration_min: ${e.minutes}`,
-  );
-  if (e.type === 'task' || e.source !== 'nap') fm.push(`status: ${e.status}`);
-  if (e.reason) fm.push(`reason: ${e.reason}`);
-  if (e.type === 'break') fm.push(`interrupted: ${JSON.stringify(e.interrupted)}`);
-  fm.push(`sessions: ${e.segments.length}`, '---', '');
-
-  const body = [`# ${e.type === 'break' && e.source === 'nap' ? '💤 Nap' : e.name}`, ''];
-  for (const [s, en] of e.segments) {
-    const a = Date.parse(s);
-    const b = Date.parse(en);
-    body.push(`- ${hm(a)}–${hm(b)} (${fmtMin(Math.round((b - a) / 60000))})`);
-  }
-  return [...fm, ...body, ''].join('\n');
-}
-
-function dailyLine(e) {
+function entryLine(e) {
   const span = `${hm(e.start)}–${hm(e.end)}`;
-  const state = e.status === 'done' ? '' : ` ⏸ unfinished (${e.reason})`;
+  const midnight = e.reason === 'midnight' ? ' (auto-closed at midnight)' : '';
   if (e.type === 'break' && e.source === 'nap') {
     const n = e.interrupted.length;
     const note = n ? ` (interrupted ${n} task${n === 1 ? '' : 's'})` : '';
-    return `- ${span} · 💤 Break · ${fmtMin(e.minutes)}${note}`;
+    return `- ${span} · 💤 Break · ${fmtMin(e.minutes)}${note}${midnight}`;
   }
-  if (e.type === 'break') return `- ${span} · 🎮 ${e.name} · ${fmtMin(e.minutes)} (break)${state}`;
-  return `- ${span} · **${e.name}** · ${tag(e.category)} · ${fmtMin(e.minutes)}${e.status === 'done' ? ' ✅' : state}`;
+  if (e.type === 'break') return `- ${span} · 🎮 ${e.name} · ${fmtMin(e.minutes)} (break)${midnight}`;
+  return `- ${span} · **${e.name}** · ${tag(e.category)} · ${fmtMin(e.minutes)} ✅${midnight}`;
 }
 
-// Append `line` at the end of the section under `heading` (creating the heading if missing).
-function appendUnderHeading(content, heading, line) {
-  const lines = content.split('\n');
-  const h = lines.findIndex((l) => l.trim() === heading);
-  if (h === -1) {
-    const trimmed = content.replace(/\s+$/, '');
-    return `${trimmed}${trimmed ? '\n\n' : ''}${heading}\n${line}\n`;
+const TOTALS = ['tasks_done', 'work_min', 'break_min'];
+
+function newDayFile(day) {
+  return [
+    '---',
+    'type: prodbud-day',
+    `date: ${ymd(day)}`,
+    ...TOTALS.map((k) => `${k}: 0`),
+    '---',
+    `# ProdBud ${mdy(day)}`,
+    '',
+  ].join('\n');
+}
+
+// Add the entry's line at the end of the day file and bump the frontmatter totals.
+function addEntry(content, e) {
+  const add = e.type === 'task' ? { tasks_done: 1, work_min: e.minutes } : { break_min: e.minutes };
+  let out = content;
+  for (const [key, inc] of Object.entries(add)) {
+    const re = new RegExp(`^${key}: (\\d+)$`, 'm');
+    out = re.test(out)
+      ? out.replace(re, (_, n) => `${key}: ${Number(n) + inc}`)
+      : out.replace(/^---\n/, `---\n${key}: ${inc}\n`);
   }
-  const level = (heading.match(/^#+/) || ['##'])[0].length;
-  const nextHeading = new RegExp(`^#{1,${level}}\\s`);
-  let end = h + 1;
-  while (end < lines.length && !nextHeading.test(lines[end])) end++;
-  let at = end;
-  while (at > h + 1 && lines[at - 1].trim() === '') at--;
-  lines.splice(at, 0, line);
-  return lines.join('\n');
+  return `${out.replace(/\s+$/, '')}\n${entryLine(e)}\n`;
 }
 
 const STATS_NOTE = `# ProdBud Stats
 
-## Today
+## Last 7 days
 \`\`\`dataview
-TABLE type, category, duration_min, status FROM "{{folder}}"
-WHERE date = date(today) SORT start ASC
-\`\`\`
-
-## This week: work per day
-\`\`\`dataview
-TABLE WITHOUT ID key AS Day, sum(rows.duration_min) AS "Work (min)", length(rows) AS "Tasks done"
+TABLE WITHOUT ID file.link AS Day, tasks_done AS "Tasks done", work_min AS "Work (min)", break_min AS "Break (min)"
 FROM "{{folder}}"
-WHERE type = "task" AND status = "done" AND date >= date(today) - dur(6 days)
-GROUP BY date SORT key DESC
+WHERE type = "prodbud-day" AND date >= date(today) - dur(6 days)
+SORT date DESC
 \`\`\`
 
-## This week: breaks per day
+## Last 30 days
 \`\`\`dataview
-TABLE WITHOUT ID key AS Day, sum(rows.duration_min) AS "Break (min)", length(rows) AS Breaks
+TABLE WITHOUT ID file.link AS Day, tasks_done AS "Tasks done", work_min AS "Work (min)", break_min AS "Break (min)"
 FROM "{{folder}}"
-WHERE type = "break" AND date >= date(today) - dur(6 days)
-GROUP BY date SORT key DESC
-\`\`\`
-
-## This week: time by category
-\`\`\`dataview
-TABLE WITHOUT ID key AS Category, sum(rows.duration_min) AS "Minutes"
-FROM "{{folder}}"
-WHERE type = "task" AND date >= date(today) - dur(6 days)
-GROUP BY category SORT sum(rows.duration_min) DESC
-\`\`\`
-
-## Unfinished
-\`\`\`dataview
-TABLE date, reason, duration_min FROM "{{folder}}"
-WHERE status = "unfinished" SORT date DESC
+WHERE type = "prodbud-day" AND date >= date(today) - dur(29 days)
+SORT date DESC
 \`\`\`
 `;
 
@@ -200,25 +163,20 @@ class ObsidianLogger {
     return true;
   }
 
-  // Returns the written note path, or null when logging is off/failed (see this.status).
+  // Only finished tasks and ended breaks are logged; unfinished tasks are logged once they're done
+  // (at the latest at midnight). Returns the day file path, or null (see this.status).
   log(ev) {
+    if (ev.kind === 'task' && ev.task.status !== 'done') return null;
     if (!this._checkVault()) return null;
     try {
       const e = normalize(ev);
+      const day = entryDay(e);
       fs.mkdirSync(this.folder, { recursive: true });
-      const note = path.join(this.folder, fileName(e));
-      fs.writeFileSync(note, renderNote(e));
-
-      const daily = this.config.dailyNotes || {};
-      if (daily.enabled) {
-        const dir = path.join(this.vault, daily.folder || '');
-        fs.mkdirSync(dir, { recursive: true });
-        const file = path.join(dir, `${ymd(e.end)}.md`);
-        const current = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
-        fs.writeFileSync(file, appendUnderHeading(current, daily.heading || '## ProdBud Log', dailyLine(e)));
-      }
+      const file = path.join(this.folder, fileName(day));
+      const current = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : newDayFile(day);
+      fs.writeFileSync(file, addEntry(current, e));
       this.status = 'ok';
-      return note;
+      return file;
     } catch (err) {
       this.status = `Obsidian write failed: ${err.message}`;
       return null;
@@ -231,7 +189,6 @@ class ObsidianLogger {
       // Lives outside the log folder so it doesn't show up in its own queries.
       const file = path.join(this.vault, 'ProdBud Stats.md');
       if (fs.existsSync(file)) return;
-      fs.mkdirSync(this.folder, { recursive: true });
       const folder = (this.config.logFolder || 'ProdBud').replace(/\\/g, '/');
       fs.writeFileSync(file, STATS_NOTE.replaceAll('{{folder}}', folder));
     } catch (err) {
@@ -240,4 +197,4 @@ class ObsidianLogger {
   }
 }
 
-module.exports = { ObsidianLogger, normalize, renderNote, dailyLine, appendUnderHeading, fileName, fmtMin };
+module.exports = { ObsidianLogger, normalize, entryLine, addEntry, newDayFile, fileName, fmtMin };

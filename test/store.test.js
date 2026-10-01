@@ -128,3 +128,34 @@ test('rejects empty names', () => {
   const { store } = setup();
   assert.throws(() => store.start({ name: '   ' }));
 });
+
+test('midnight rollover marks yesterday\'s tasks done and ends a nap at 00:00', () => {
+  const { store, clock, logs } = setup(); // 14:32
+  const unfinished = store.start({ name: 'A' });
+  store.closeCard(unfinished.id);
+  const paused = store.start({ name: 'B' });
+  store.pause(paused.id);
+  clock.advance(9 * 60 + 20); // 23:52
+  store.toggleNap();
+  clock.advance(10); // 00:02
+  assert.equal(store.tick(), true);
+  for (const t of [unfinished, paused]) {
+    assert.equal(t.status, 'done');
+    assert.equal(t.reason, 'midnight');
+  }
+  assert.equal(store.state.nap, null);
+  const nap = logs.find((ev) => ev.kind === 'break');
+  assert.equal(nap.end, new Date(2026, 8, 30).toISOString());
+  const snap = store.snapshot();
+  assert.equal(snap.stats.done, 0, "yesterday's tasks don't count today");
+  assert.equal(snap.tasks.length, 0);
+});
+
+test('tasks started today are left alone at rollover', () => {
+  const { store, clock } = setup();
+  clock.advance(10 * 60); // 00:32 next day
+  const t = store.start({ name: 'Fresh' });
+  store.pause(t.id);
+  store.tick();
+  assert.equal(t.status, 'paused');
+});

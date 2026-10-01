@@ -20,7 +20,7 @@ Built with Electron and targeted at Windows. The full spec is in [prodbud_plan.m
 - **Break-kind presets** (e.g. Gaming): get a card and timer, count toward Break time instead of
   Duration, and interrupt running work just like the nap button
 - **Unfinished list** (▶): resume or discard tasks that were interrupted, closed, or left paused for
-  30+ minutes. Resumed tasks keep adding up time
+  30+ minutes. Resumed tasks keep adding up time. At midnight, leftovers are marked done and logged
 - **Categories**: add a trailing tag when typing a task name, e.g. `Study Rust #study`
 - **Crash-safe**: state is written atomically on every change, and running/paused tasks come back on restart
 - **Tray icon**, global hotkey (`Ctrl+Alt+P` by default), and a *Launch on startup* toggle in the tray menu
@@ -58,22 +58,32 @@ vaultPath: 'C:\Users\you\Documents\MyVault'
 - Config lookup order lives in [`src/main/config.js`](src/main/config.js); the vault writer is
   [`src/main/obsidian.js`](src/main/obsidian.js).
 
-Other settings: `logFolder`, `dailyNotes` (enabled / folder / heading), `autoUnfinishMin` (30),
+Other settings: `logFolder`, `autoUnfinishMin` (30),
 `nudgeAfterMin` (10), `hotkey`, and `presets`.
 
 ## What gets written to the vault
 
-| File | When |
-|---|---|
-| `ProdBud/<date> <HHmm> <task>.md` | A task finishes or becomes unfinished (the note is rewritten with the latest totals) |
-| `ProdBud/<date> <HHmm> Nap.md` | A nap break ends |
-| `<daily folder>/YYYY-MM-DD.md` | One line appended under `## ProdBud Log` for each of the above |
-| `ProdBud Stats.md` | Created once, with Dataview queries: today, work/breaks per day this week, time by category, unfinished |
+One file per day in the log folder, named `prod_data M-D-YYYY.md`, e.g. `ProdBud/prod_data 10-1-2026.md`.
+(File names can't contain `/`, so the date uses dashes; the heading inside shows `10/1/2026`.)
+
+- Each **finished task** and each **break** is appended as one line as it happens.
+- Unfinished tasks aren't logged until they're done. **At midnight**, every task that isn't done
+  (unfinished, paused or still running) is marked done as it is, cut off at 00:00, and logged into that day's file.
+- The frontmatter keeps running day totals for Dataview, and `ProdBud Stats.md` (created once) tabulates the last 7 and 30 days.
 
 ```markdown
+---
+type: prodbud-day
+date: 2026-10-01
+tasks_done: 3
+work_min: 101
+break_min: 70
+---
+# ProdBud 10/1/2026
 - 14:32–15:17 · **Wash dishes** · #chores · 31m ✅
 - 15:20–15:45 · 💤 Break · 25m (interrupted 2 tasks)
 - 16:00–16:45 · 🎮 Gaming · 45m (break)
+- 23:10–00:00 · **Study Rust** · #study · 50m ✅ (auto-closed at midnight)
 ```
 
 ## Development
@@ -85,7 +95,7 @@ npm test
 | Path | What |
 |---|---|
 | `src/main/store.js` | Task/break state machine (segments, nap, interrupts, stats); pure and unit-tested |
-| `src/main/obsidian.js` | Markdown notes, daily-note lines, stats note |
+| `src/main/obsidian.js` | Per-day `prod_data` log file and stats note |
 | `src/main/main.js` | Electron windows, IPC, tray, hotkey, persistence |
 | `src/renderer/` | Widget, task card, and motivator character (inline SVG) |
 

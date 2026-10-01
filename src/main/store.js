@@ -174,7 +174,7 @@ class Store extends EventEmitter {
   // Periodic housekeeping. Returns true if state changed.
   tick() {
     const now = this.now();
-    let changed = false;
+    let changed = this._rollover(startOfDay(now));
     const limit = this.autoUnfinishMin * MIN_MS;
     if (limit > 0) {
       for (const task of this.byStatus('paused')) {
@@ -260,9 +260,35 @@ class Store extends EventEmitter {
     task.pausedAt = null;
   }
 
-  _close(task) {
+  _close(task, at = this.now()) {
     const last = task.segments[task.segments.length - 1];
-    if (last && !last[1]) last[1] = iso(this.now());
+    if (last && !last[1]) last[1] = iso(at);
+  }
+
+  // At midnight, anything not done from a previous day (running, paused or unfinished) is
+  // marked done as-is, with time cut at 00:00, so each day's log is final. A nap is ended too.
+  _rollover(midnight) {
+    let changed = false;
+    const nap = this.state.nap;
+    if (nap && Date.parse(nap.start) < midnight) {
+      this._endNap(midnight);
+      changed = true;
+    }
+    for (const task of this.byStatus('running', 'paused', 'unfinished')) {
+      const lastStart = Date.parse(task.segments[task.segments.length - 1][0]);
+      if (lastStart >= midnight) continue;
+      this._close(task, midnight);
+      task.status = 'done';
+      task.reason = 'midnight';
+      task.pausedAt = null;
+      task.finishedAt = iso(midnight - 1);
+      this._log(task);
+      changed = true;
+    }
+    if (changed) {
+      this.state.pendingResume = this.state.pendingResume.filter((id) => this.get(id)?.status === 'unfinished');
+    }
+    return changed;
   }
 
   _unfinish(task, reason) {
@@ -279,10 +305,10 @@ class Store extends EventEmitter {
     return list;
   }
 
-  _endNap() {
+  _endNap(at = this.now()) {
     const nap = this.state.nap;
     if (!nap) return;
-    const entry = { source: 'nap', start: nap.start, end: iso(this.now()), interrupted: nap.interrupted };
+    const entry = { source: 'nap', start: nap.start, end: iso(at), interrupted: nap.interrupted };
     this.state.breaks.push(entry);
     this.state.nap = null;
     this.state.pendingResume = nap.interrupted.filter((id) => this.get(id)?.status === 'unfinished');
