@@ -21,6 +21,11 @@
     "electron": "^44.4.5",
     "electron-builder": "^26.15.3"
   },
+  "overrides": {
+    "dompurify": "$dompurify",
+    "global-agent": "^4.1.3",
+    "http-cache-semantics": "^4.3.0"
+  },
   "build": {
     "appId": "com.prodbud.app",
     "productName": "ProdBud",
@@ -29,7 +34,9 @@
       "src/**/*",
       "assets/**/*",
       "config.yaml",
-      "package.json"
+      "package.json",
+      "!node_modules/monaco-editor/{esm,dev}/**",
+      "!node_modules/**/*.map"
     ],
     "win": {
       "target": [
