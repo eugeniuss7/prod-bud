@@ -11,7 +11,11 @@
     "dist": "electron-builder --win"
   },
   "dependencies": {
-    "js-yaml": "^4.1.0"
+    "cross-spawn": "^7.0.6",
+    "dompurify": "^3.4.16",
+    "js-yaml": "^4.1.0",
+    "marked": "^18.1.0",
+    "monaco-editor": "~0.57.0"
   },
   "devDependencies": {
     "electron": "^44.4.5",
@@ -21,8 +25,21 @@
     "appId": "com.prodbud.app",
     "productName": "ProdBud",
     "icon": "assets/icon.png",
-    "files": ["src/**/*", "assets/**/*", "config.yaml", "package.json"],
-    "win": { "target": ["nsis", "portable"] },
-    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true }
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "config.yaml",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   }
 }

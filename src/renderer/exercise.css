@@ -1,0 +1,154 @@
+/* The exercise window is a normal framed window, unlike the transparent overlays. */
+html, body { height: 100%; background: var(--paper); }
+body { padding: 0; }
+
+.app {
+  height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(320px, 38%) 1fr;
+  position: relative;
+}
+
+/* ---- side panel ---- */
+.side {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 2px solid var(--ink);
+}
+.side-head { padding: 16px 20px 10px; }
+.meta { font-size: 12px; color: var(--muted); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.dots { letter-spacing: 1px; color: var(--accent); }
+h1 { margin: 4px 0 6px; font-size: 20px; line-height: 1.25; }
+.task-state { font-size: 12px; color: var(--muted); }
+.task-state.paused { color: var(--warn); }
+
+.tabs { display: flex; gap: 4px; padding: 0 16px; border-bottom: 2px solid var(--ink); }
+.tabs button {
+  border: 2px solid transparent;
+  border-bottom: none;
+  border-radius: 10px 10px 0 0;
+  padding: 6px 14px;
+  margin-bottom: -2px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+}
+.tabs button[aria-selected="true"] { border-color: var(--ink); background: var(--paper); color: var(--ink); }
+.count { background: var(--accent); color: var(--paper); border-radius: 999px; padding: 0 6px; font-size: 11px; margin-left: 4px; }
+
+.pane { flex: 1; overflow-y: auto; padding: 16px 20px 24px; user-select: text; }
+.pane h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); margin: 18px 0 6px; }
+
+.why { margin: 0 0 12px; padding: 8px 12px; border-left: 3px solid var(--accent); background: var(--chip); border-radius: 0 8px 8px 0; font-size: 13px; }
+.note { color: var(--muted); font-size: 12px; }
+.empty { color: var(--muted); padding: 24px 0; text-align: center; }
+
+/* markdown */
+.md { font-size: 14px; line-height: 1.55; }
+.md h1, .md h2, .md h3 { font-size: 15px; margin: 16px 0 6px; text-transform: none; letter-spacing: 0; color: var(--ink); }
+.md p { margin: 8px 0; }
+.md ul, .md ol { padding-left: 20px; }
+.md code { font-family: Consolas, "Cascadia Code", ui-monospace, monospace; font-size: 12.5px; background: var(--chip); padding: 1px 4px; border-radius: 4px; }
+.md pre, details pre {
+  background: var(--chip);
+  border-radius: 8px;
+  padding: 10px 12px;
+  overflow-x: auto;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.md pre code { background: none; padding: 0; }
+.md table { border-collapse: collapse; font-size: 13px; }
+.md th, .md td { border: 1px solid var(--faint); padding: 3px 8px; }
+
+.hints { margin-top: 16px; }
+.hints ol { padding-left: 20px; margin: 0 0 8px; }
+.hints li { margin: 6px 0; padding: 6px 10px; background: var(--chip); border-radius: 8px; }
+details { margin-top: 14px; }
+summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+pre code { font-family: Consolas, "Cascadia Code", ui-monospace, monospace; }
+
+button.soft, button.primary, button.done-btn, .toolbar button { padding: 5px 12px; font-size: 13px; font-weight: 600; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--paper); }
+button.primary:hover { filter: brightness(1.08); background: var(--accent); }
+button:disabled { opacity: .45; cursor: default; }
+
+/* review */
+.reviewing { display: flex; align-items: center; gap: 10px; color: var(--muted); padding: 8px 0 14px; }
+.mini-char { width: 44px; height: 40px; display: inline-block; }
+.score-row { display: flex; gap: 14px; align-items: center; }
+.score {
+  width: 64px;
+  height: 64px;
+  border: 3px solid var(--ink);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  font-weight: 800;
+}
+.score.good { border-color: var(--accent); color: var(--accent); }
+.score.mid { border-color: #c79a1e; color: #c79a1e; }
+.score.low { border-color: var(--warn); color: var(--warn); }
+.verdict { font-weight: 700; font-size: 15px; }
+.summary { font-size: 14px; line-height: 1.5; }
+.strengths, .issues { padding-left: 0; list-style: none; margin: 0; }
+.strengths li { padding: 4px 0 4px 22px; position: relative; font-size: 13.5px; }
+.strengths li::before { content: "✓"; position: absolute; left: 4px; color: var(--accent); font-weight: 700; }
+.issues li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 8px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  border: 1.5px solid var(--faint);
+  border-radius: 8px;
+  font-size: 13.5px;
+}
+.issues li.clickable { cursor: pointer; }
+.issues li.clickable:hover { border-color: var(--ink); }
+.sev { font-size: 11px; font-weight: 700; text-transform: uppercase; padding: 1px 6px; border-radius: 4px; background: var(--chip); align-self: start; }
+.sev.bug { color: var(--warn); }
+.sev.design { color: var(--break); }
+.sev.performance { color: #c79a1e; }
+.line-ref { color: var(--muted); font-size: 12px; }
+.study { margin-top: 16px; padding: 8px 12px; background: var(--chip); border-radius: 8px; font-size: 13.5px; }
+.history { margin-top: 20px; font-size: 12px; color: var(--muted); }
+.history button { font-size: 12px; padding: 2px 8px; margin: 2px 4px 2px 0; }
+
+/* ---- editor side ---- */
+.work { display: grid; grid-template-rows: auto 1fr minmax(120px, 28%); min-width: 0; min-height: 0; }
+.toolbar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 2px solid var(--ink); }
+.file { font-family: Consolas, ui-monospace, monospace; font-weight: 600; }
+.spacer { flex: 1; }
+.editor { min-height: 0; }
+.console { border-top: 2px solid var(--ink); display: flex; flex-direction: column; min-height: 0; }
+.console-head { display: flex; justify-content: space-between; padding: 4px 12px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.run-state.pass { color: var(--accent); }
+.run-state.fail { color: var(--warn); }
+.output {
+  flex: 1;
+  margin: 0;
+  padding: 4px 12px 10px;
+  overflow: auto;
+  font: 12.5px/1.45 Consolas, "Cascadia Code", ui-monospace, monospace;
+  white-space: pre-wrap;
+  user-select: text;
+}
+
+/* ---- loading / error overlay ---- */
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+  z-index: 10;
+}
+.overlay[hidden] { display: none; }
+.overlay-card { text-align: center; max-width: 440px; padding: 24px; }
+.overlay-char { width: 90px; height: 84px; margin: 0 auto 8px; }
+.overlay h2 { font-size: 18px; margin: 0 0 6px; }
+.overlay .note { font-size: 13px; white-space: pre-wrap; }
+.overlay button { margin-top: 12px; }

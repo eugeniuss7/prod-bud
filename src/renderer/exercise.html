@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; worker-src 'self' blob:">
+  <title>Python exercise · ProdBud</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="exercise.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="side">
+      <header class="side-head">
+        <div id="meta" class="meta"></div>
+        <h1 id="title">Python exercise</h1>
+        <div id="task-state" class="task-state"></div>
+      </header>
+      <nav class="tabs" role="tablist">
+        <button id="tab-task" role="tab" aria-selected="true">Task</button>
+        <button id="tab-feedback" role="tab" aria-selected="false">Feedback <span id="feedback-count" class="count" hidden></span></button>
+      </nav>
+
+      <section id="pane-task" class="pane" role="tabpanel">
+        <p id="why" class="why" hidden></p>
+        <div id="instructions" class="md"></div>
+        <div class="hints">
+          <ol id="hint-list"></ol>
+          <button id="hint-btn" class="soft">Show a hint</button>
+        </div>
+        <details id="tests-box">
+          <summary>Tests your code runs against</summary>
+          <pre><code id="tests" class="language-python"></code></pre>
+        </details>
+        <p id="packages" class="note" hidden></p>
+      </section>
+
+      <section id="pane-feedback" class="pane" role="tabpanel" hidden>
+        <div id="reviewing" class="reviewing" hidden>
+          <span id="review-char" class="mini-char"></span>
+          <span>Claude is reviewing your code…</span>
+        </div>
+        <div id="no-feedback" class="empty">Submit your solution and Claude's review shows up here.</div>
+        <article id="review" hidden>
+          <div class="score-row">
+            <div id="score" class="score"></div>
+            <div>
+              <div id="verdict" class="verdict"></div>
+              <div id="attempt" class="note"></div>
+            </div>
+          </div>
+          <p id="summary" class="summary"></p>
+          <h3>What's good</h3>
+          <ul id="strengths" class="strengths"></ul>
+          <h3>Issues</h3>
+          <ul id="issues" class="issues"></ul>
+          <h3>How to improve</h3>
+          <div id="suggestions" class="md"></div>
+          <p class="study"><b>Study next:</b> <span id="concept"></span></p>
+        </article>
+        <div id="history" class="history"></div>
+      </section>
+    </aside>
+
+    <main class="work">
+      <div class="toolbar">
+        <span class="file">solution.py</span>
+        <span id="save-state" class="note"></span>
+        <span class="spacer"></span>
+        <button id="reset" class="soft" title="Replace your code with the starter code">Reset</button>
+        <button id="run" title="Run the tests (Ctrl+Enter)">Run tests</button>
+        <button id="submit" class="primary" title="Send to Claude for review (Ctrl+Shift+Enter)">Submit for review</button>
+        <button id="finish" class="done-btn" title="Finish the exercise and stop the timer">Finish</button>
+      </div>
+      <div id="editor" class="editor"></div>
+      <div class="console">
+        <div class="console-head"><span>Output</span><span id="run-state" class="run-state"></span></div>
+        <pre id="output" class="output">Run the tests with Ctrl+Enter.</pre>
+      </div>
+    </main>
+
+    <div id="overlay" class="overlay">
+      <div class="overlay-card">
+        <div id="overlay-char" class="overlay-char"></div>
+        <h2 id="overlay-title">Claude is writing your next exercise…</h2>
+        <p id="overlay-text" class="note">Picked for your level and recent progress. This takes a little while.</p>
+        <button id="retry" class="primary" hidden>Try again</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- marked and DOMPurify must load before Monaco's AMD loader so they register as globals. -->
+  <script src="../../node_modules/marked/lib/marked.umd.js"></script>
+  <script src="../../node_modules/dompurify/dist/purify.min.js"></script>
+  <script src="common.js"></script>
+  <script src="../../node_modules/monaco-editor/min/vs/loader.js"></script>
+  <script src="exercise.js"></script>
+</body>
+</html>

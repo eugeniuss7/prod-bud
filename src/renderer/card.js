@@ -49,7 +49,8 @@ function render(snap) {
   root.classList.toggle('break', task.kind === 'break');
   root.classList.toggle('paused', task.status === 'paused');
   $('name').textContent = task.name;
-  $('name').title = task.name;
+  $('name').title = task.exerciseId ? `${task.name} (click to open the exercise)` : task.name;
+  $('name').classList.toggle('link', !!task.exerciseId);
   document.title = task.name;
   const running = task.status === 'running';
   $('pause').innerHTML = running ? ICONS.pause : ICONS.play;
@@ -60,6 +61,9 @@ function render(snap) {
 $('finish').addEventListener('click', () => api.send('finish', { id }));
 $('pause').addEventListener('click', () => api.send('toggle', { id }));
 $('close').addEventListener('click', () => api.send('close', { id }));
+$('name').addEventListener('click', () => {
+  if (task?.exerciseId) api.send('openExercise', { id: task.id });
+});
 
 api.onState(render);
 api.getState().then(render);
