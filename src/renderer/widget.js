@@ -18,13 +18,38 @@ function renderPresets() {
       title: `${p.name}${p.kind === 'break' ? ' (break)' : ''}`,
       'aria-label': `Start ${p.name}`,
       'data-kind': p.kind,
-      onclick: () => api.send('preset', { id: p.id }),
+      onclick: () => (p.ask ? openAsk(p) : api.send('preset', { id: p.id })),
     });
     btn.innerHTML = iconFor(p.icon, p.name);
     box.append(btn);
   }
   box.hidden = snap.presets.length === 0;
 }
+
+// ---- "What are you coding?" prompt for presets with `ask` ----
+
+let asking = null;
+
+function openAsk(preset) {
+  asking = preset;
+  $('ask-label').textContent = preset.ask;
+  $('ask-input').value = '';
+  $('ask-input').placeholder = `${preset.name}: …`;
+  $('ask').hidden = false;
+  $('ask-input').focus();
+}
+
+function closeAsk() {
+  asking = null;
+  $('ask').hidden = true;
+}
+
+$('ask').addEventListener('submit', (e) => {
+  e.preventDefault();
+  if (asking) api.send('preset', { id: asking.id, detail: $('ask-input').value });
+  closeAsk();
+});
+$('ask-cancel').addEventListener('click', closeAsk);
 
 function renderUnfinished() {
   const list = snap.tasks.filter((t) => t.status === 'unfinished');
@@ -105,7 +130,9 @@ $('toggle-list').addEventListener('click', () => {
   $('toggle-list').setAttribute('aria-expanded', String(!list.hidden));
 });
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') api.send('hide');
+  if (e.key !== 'Escape') return;
+  if (asking) closeAsk();
+  else api.send('hide');
 });
 
 // Size the window to the panel so the list can expand.

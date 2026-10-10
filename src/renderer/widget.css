@@ -94,3 +94,27 @@ h1 { margin: 0; font-size: 17px; font-weight: 700; letter-spacing: .3px; }
 .unfinished-list button { width: 26px; height: 26px; border-radius: 8px; }
 .unfinished-list .empty { color: var(--muted); font-size: 12px; text-align: center; display: block; }
 .unfinished-list li.break .name { color: var(--break); }
+
+.ask {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 10px;
+  padding: 8px 10px 10px;
+  border: 2px solid var(--accent);
+  border-radius: 12px;
+  background: var(--chip);
+}
+.ask label { font-weight: 600; font-size: 13px; }
+.ask input {
+  height: 32px;
+  width: 100%;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  padding: 0 10px;
+  background: var(--paper);
+  user-select: text;
+}
+.ask input::placeholder { color: var(--faint); }
+.ask-actions { display: flex; justify-content: flex-end; gap: 6px; }
+.ask-actions button { padding: 3px 12px; font-size: 12px; font-weight: 600; }
+#ask-start { border-color: var(--accent); color: var(--accent); }

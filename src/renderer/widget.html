@@ -23,6 +23,15 @@
 
     <section id="presets" class="presets"></section>
 
+    <form id="ask" class="ask" hidden>
+      <label id="ask-label" for="ask-input"></label>
+      <input id="ask-input" maxlength="80" autocomplete="off" spellcheck="false">
+      <div class="ask-actions">
+        <button type="button" id="ask-cancel" class="ghost">Cancel</button>
+        <button type="submit" id="ask-start">Start</button>
+      </div>
+    </form>
+
     <section class="mid">
       <form id="start-form">
         <input id="task-name" placeholder="Task name" maxlength="80" autocomplete="off" spellcheck="false">

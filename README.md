@@ -23,6 +23,8 @@ Built with Electron and targeted at Windows. The full spec is in [prodbud_plan.m
   30+ minutes. Resumed tasks keep adding up time. At midnight, leftovers are marked done and logged,
   and running tasks are split: closed at 00:00 and restarted for the new day
 - **Categories**: add a trailing tag when typing a task name, e.g. `Study Rust #study`
+- **Ask what you're working on**: presets with an `ask:` question (Study and Coding by default) pop up a prompt
+  when clicked; answering `prod-bud` starts **Coding: prod-bud**. Leave it empty for plain "Coding". Esc cancels
 - **Crash-safe**: state is written atomically on every change, and running/paused tasks come back on restart
 - **Tray icon**, global hotkey (`Ctrl+Alt+P` by default), and a *Launch on startup* toggle in the tray menu
 

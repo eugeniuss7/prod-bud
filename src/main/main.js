@@ -179,9 +179,11 @@ function parseTaskName(input) {
 
 const commands = {
   start: ({ name }) => store.start({ ...parseTaskName(name), kind: 'work' }),
-  preset: ({ id }) => {
+  preset: ({ id, detail }) => {
     const p = config.presets.find((x) => x.id === id);
-    if (p) store.start({ name: p.name, kind: p.kind, category: p.category, icon: p.icon, presetId: p.id });
+    if (!p) return;
+    const extra = String(detail || '').trim().slice(0, 80);
+    store.start({ name: extra ? `${p.name}: ${extra}` : p.name, kind: p.kind, category: p.category, icon: p.icon, presetId: p.id });
   },
   pause: ({ id }) => store.pause(id),
   resume: ({ id }) => store.resume(id),

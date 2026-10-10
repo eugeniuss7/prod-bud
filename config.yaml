@@ -24,9 +24,10 @@ hotkey: 'Control+Alt+P'
 
 # One-click preset tasks. kind: work (counts toward Tasks done/Duration)
 # or break (counts toward Break time and interrupts running work).
+# ask: a question shown on click; the answer is added to the task name ("Coding: prod-bud").
 # icons: dish, shirt, book, broom, code, coffee, dumbbell, controller, tv, music
 presets:
   - { id: dishes,   name: Wash dishes,     icon: dish,  kind: work, category: chores }
   - { id: laundry,  name: Laundry,         icon: shirt, kind: work, category: chores }
-  - { id: study,    name: Study,           icon: book,  kind: work, category: study }
-  - { id: coding,   name: Coding,          icon: code,  kind: work, category: coding }
+  - { id: study,    name: Study,           icon: book,  kind: work, category: study,  ask: 'What are you studying?' }
+  - { id: coding,   name: Coding,          icon: code,  kind: work, category: coding, ask: 'What are you coding?' }

@@ -38,6 +38,8 @@ function loadConfig(file) {
       icon: p.icon ? String(p.icon) : null,
       kind: p.kind === 'break' ? 'break' : 'work',
       category: String(p.category || (p.kind === 'break' ? 'game' : 'general')),
+      // Optional question asked on click; the answer is added to the name ("Coding: prod-bud").
+      ask: p.ask ? String(p.ask) : null,
     }));
   config.file = file;
   return config;
