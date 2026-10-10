@@ -1,13 +1,11 @@
 'use strict';
 
-const { app, BrowserWindow, ipcMain, Tray, Menu, globalShortcut, screen, nativeImage, nativeTheme, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, globalShortcut, screen, nativeImage, shell } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const { Store, emptyState } = require('./store');
 const { ObsidianLogger } = require('./obsidian');
 const { findConfig, loadConfig } = require('./config');
-const { Exercises } = require('./exercises');
-const { askClaude } = require('./claude');
 
 const ROOT = path.join(__dirname, '..', '..');
 const RENDERER = path.join(__dirname, '..', 'renderer');
@@ -23,9 +21,7 @@ let widget;
 let tray;
 let statePath;
 let quitting = false;
-let exercises;
 const cards = new Map(); // task id -> BrowserWindow
-const exerciseWindows = new Map(); // exercise id -> BrowserWindow
 
 // ---- persistence ---------------------------------------------------------------
 
@@ -170,116 +166,8 @@ function broadcast() {
   for (const win of [widget, ...cards.values()]) {
     if (win && !win.isDestroyed()) win.webContents.send('state', snap);
   }
-  // Exercise windows show their task's state (running/paused/done).
-  for (const exId of exerciseWindows.keys()) sendExercise(exId);
   updateTray(snap);
 }
-
-// ---- coding exercises ------------------------------------------------------------------
-
-function exerciseTask(exId) {
-  return store.byStatus('running', 'paused', 'unfinished').find((t) => t.exerciseId === exId);
-}
-
-// What the exercise window sees: hints only as far as revealed, and its task's state.
-function exercisePayload(exId) {
-  const record = exercises.get(exId);
-  if (!record) return null;
-  const task = exerciseTask(exId);
-  const exercise = record.exercise && {
-    ...record.exercise,
-    hints: record.exercise.hints.slice(0, record.hintsShown),
-    hintCount: record.exercise.hints.length,
-  };
-  return { ...record, exercise, task: task ? { id: task.id, status: task.status } : null };
-}
-
-function sendExercise(exId) {
-  const win = exerciseWindows.get(exId);
-  if (win && !win.isDestroyed()) win.webContents.send('exercise', exercisePayload(exId));
-}
-
-function openExercise(exId) {
-  const existing = exerciseWindows.get(exId);
-  if (existing && !existing.isDestroyed()) {
-    if (existing.isMinimized()) existing.restore();
-    return existing.focus();
-  }
-  const win = new BrowserWindow({
-    width: 1180,
-    height: 780,
-    minWidth: 820,
-    minHeight: 520,
-    title: 'Python exercise · ProdBud',
-    icon: ICON,
-    autoHideMenuBar: true,
-    show: false,
-    backgroundColor: nativeTheme.shouldUseDarkColors ? '#1e1d1b' : '#fffdf8',
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true,
-    },
-  });
-  win.loadFile(path.join(RENDERER, 'exercise.html'), { query: { id: exId } });
-  win.once('ready-to-show', () => win.show());
-  win.on('closed', () => exerciseWindows.delete(exId));
-  exerciseWindows.set(exId, win);
-}
-
-async function generateExercise(exId) {
-  sendExercise(exId);
-  const record = await exercises.generate(exId);
-  const task = exerciseTask(exId);
-  if (record.status === 'ready' && task) store.update(task.id, { name: record.exercise.title });
-  sendExercise(exId);
-}
-
-function startExercise(preset) {
-  // One exercise at a time: the button brings back the one in progress.
-  const current = store.byStatus('running', 'paused', 'unfinished').find((t) => t.exerciseId);
-  if (current) {
-    if (current.status !== 'running') store.resume(current.id);
-    return openExercise(current.exerciseId);
-  }
-  const exId = `ex_${Date.now().toString(36)}`;
-  exercises.start(exId);
-  store.start({ name: preset.name, kind: preset.kind, category: preset.category, icon: preset.icon, presetId: preset.id, exerciseId: exId });
-  openExercise(exId);
-  generateExercise(exId);
-}
-
-const exerciseHandlers = {
-  'ex:get': ({ id }) => exercisePayload(id),
-  'ex:save': ({ id, code }) => {
-    exercises.saveCode(id, String(code));
-    return true;
-  },
-  'ex:run': ({ id, code }) => exercises.run(id, String(code)),
-  'ex:review': async ({ id, code }) => {
-    const record = await exercises.review(id, String(code));
-    const task = exerciseTask(id);
-    if (task) store.update(task.id, { score: record.reviews[record.reviews.length - 1].score });
-    return exercisePayload(id);
-  },
-  'ex:hint': ({ id }) => {
-    exercises.revealHint(id);
-    return exercisePayload(id);
-  },
-  'ex:retry': ({ id }) => {
-    exercises.start(id);
-    generateExercise(id);
-    return exercisePayload(id);
-  },
-  'ex:finish': ({ id, code }) => {
-    exercises.saveCode(id, String(code));
-    const task = exerciseTask(id);
-    if (task) store.finish(task.id); // the 'log' listener records it in exercise history
-    else exercises.complete(id);
-    return exercisePayload(id);
-  },
-};
 
 // ---- commands from renderers ---------------------------------------------------------
 
@@ -293,13 +181,7 @@ const commands = {
   start: ({ name }) => store.start({ ...parseTaskName(name), kind: 'work' }),
   preset: ({ id }) => {
     const p = config.presets.find((x) => x.id === id);
-    if (!p) return;
-    if (p.action === 'exercise') return startExercise(p);
-    store.start({ name: p.name, kind: p.kind, category: p.category, icon: p.icon, presetId: p.id });
-  },
-  openExercise: ({ id }) => {
-    const task = store.get(id);
-    if (task?.exerciseId) openExercise(task.exerciseId);
+    if (p) store.start({ name: p.name, kind: p.kind, category: p.category, icon: p.icon, presetId: p.id });
   },
   pause: ({ id }) => store.pause(id),
   resume: ({ id }) => store.resume(id),
@@ -405,20 +287,8 @@ if (!app.requestSingleInstanceLock()) {
     store = new Store({ state: loadState(), autoUnfinishMin: config.autoUnfinishMin });
     logger = new ObsidianLogger(config);
     logger.ensureStatsNote();
-    const exercisesDir = path.join(app.getPath('userData'), 'exercises');
-    exercises = new Exercises({
-      dir: exercisesDir,
-      getConfig: () => config,
-      ask: (prompt, system, schema) =>
-        askClaude({ prompt, system, schema, command: config.claude.command, model: config.claude.model, cwd: exercisesDir }),
-    });
 
     store.on('log', (ev) => {
-      // A finished exercise (not a midnight split) goes into the exercise history.
-      if (ev.kind === 'task' && ev.task.exerciseId && ev.task.status === 'done' && ev.task.reason !== 'midnight') {
-        exercises.complete(ev.task.exerciseId);
-        setImmediate(() => sendExercise(ev.task.exerciseId));
-      }
       logger.log(ev);
       if (logger.status !== 'ok' && logger.status !== 'unset') console.error(`[prodbud] ${logger.status}`);
     });
@@ -430,9 +300,6 @@ if (!app.requestSingleInstanceLock()) {
     });
 
     ipcMain.handle('state:get', () => snapshot());
-    for (const [channel, handler] of Object.entries(exerciseHandlers)) {
-      ipcMain.handle(channel, (_e, args = {}) => handler(args));
-    }
     ipcMain.on('cmd', (e, { action, ...args } = {}) => {
       const fn = commands[action];
       if (!fn) return;

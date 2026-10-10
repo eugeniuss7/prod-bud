@@ -11,18 +11,13 @@
     "dist": "electron-builder --win"
   },
   "dependencies": {
-    "cross-spawn": "^7.0.6",
-    "dompurify": "^3.4.16",
-    "js-yaml": "^4.1.0",
-    "marked": "^18.1.0",
-    "monaco-editor": "~0.57.0"
+    "js-yaml": "^4.1.0"
   },
   "devDependencies": {
     "electron": "^44.4.5",
     "electron-builder": "^26.15.3"
   },
   "overrides": {
-    "dompurify": "$dompurify",
     "global-agent": "^4.1.3",
     "http-cache-semantics": "^4.3.0"
   },
@@ -35,7 +30,6 @@
       "assets/**/*",
       "config.yaml",
       "package.json",
-      "!node_modules/monaco-editor/{esm,dev}/**",
       "!node_modules/**/*.map"
     ],
     "win": {

@@ -20,13 +20,6 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.name.link {
-  -webkit-app-region: no-drag;
-  cursor: pointer;
-  text-decoration: underline dotted;
-  text-underline-offset: 3px;
-}
-.name.link:hover { color: var(--accent); }
 .time { display: flex; justify-content: center; gap: 12px; margin-top: 4px; font-size: 16px; }
 .time span:first-child { color: var(--muted); }
 .card.paused .time #timer { color: var(--muted); }

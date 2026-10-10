@@ -47,7 +47,6 @@ function normalize(ev) {
     minutes: Math.round(ms / 60000),
     status: t.status,
     reason: t.reason,
-    score: t.score ?? null,
   };
 }
 
@@ -60,8 +59,7 @@ function fileName(ms) {
 
 function entryLine(e) {
   const midnight = e.reason === 'midnight' ? ' (auto-closed at midnight)' : '';
-  const score = e.score != null ? ` · score ${e.score}/10` : '';
-  return `- ${hm(e.start)}–${hm(e.end)} · **${e.name}** · ${tag(e.category)} · ${fmtMin(e.minutes)}${score} ✅${midnight}`;
+  return `- ${hm(e.start)}–${hm(e.end)} · **${e.name}** · ${tag(e.category)} · ${fmtMin(e.minutes)} ✅${midnight}`;
 }
 
 const TOTALS = ['tasks_done', 'work_min'];

@@ -63,7 +63,7 @@ class Store extends EventEmitter {
 
   // ---- commands -------------------------------------------------------------
 
-  start({ name, kind = 'work', category = 'general', icon = null, presetId = null, exerciseId = null }) {
+  start({ name, kind = 'work', category = 'general', icon = null, presetId = null }) {
     this._rollover();
     name = String(name || '').trim();
     if (!name) throw new Error('Task name is required');
@@ -83,8 +83,6 @@ class Store extends EventEmitter {
       finishedAt: null,
       interrupted: [],
       pos: null,
-      exerciseId,
-      score: null,
     };
     this.state.tasks.push(task);
     this._activate(task);
@@ -180,15 +178,6 @@ class Store extends EventEmitter {
     this._changed();
   }
 
-  // Rename a task or attach its latest review score (exercise tasks).
-  update(id, patch) {
-    const task = this.get(id);
-    if (!task) return;
-    if (patch.name !== undefined) task.name = String(patch.name).trim() || task.name;
-    if (patch.score !== undefined) task.score = patch.score;
-    this._changed();
-  }
-
   setPos(id, pos) {
     const task = this.get(id);
     if (!task) return;
@@ -264,7 +253,6 @@ class Store extends EventEmitter {
           baseMs: t.segments.filter((seg) => seg[1]).reduce((sum, seg) => sum + segmentMs(seg, now), 0),
           openSince: open ? Date.parse(open[0]) : null,
           pausedSince: t.pausedAt ? Date.parse(t.pausedAt) : null,
-          exerciseId: t.exerciseId || null,
         };
       }),
     };

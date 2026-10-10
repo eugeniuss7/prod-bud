@@ -17,9 +17,6 @@ Built with Electron and targeted at Windows. The full spec is in [prodbud_plan.m
   celebrates when you finish
 - **Nap button**: interrupts every running task (they move to *Unfinished*), then counts break time.
   Tap again to wake up, and you'll be offered **Resume all**
-- **Python exercises** (optional, off by default): add `action: exercise` to a preset and Claude writes a Python exercise matched to your level and recent
-  scores, following an AI-engineering curriculum (idiomatic Python → NumPy → LLM APIs, RAG, agents, evals, ML
-  from scratch). See [Coding exercises](#coding-exercises)
 - **Break-kind presets** (`kind: break` in config): get a card and timer, count toward Break time instead of
   Duration, and interrupt running work just like the nap button
 - **Unfinished list** (▶): resume or discard tasks that were interrupted, closed, or left paused for
@@ -28,38 +25,6 @@ Built with Electron and targeted at Windows. The full spec is in [prodbud_plan.m
 - **Categories**: add a trailing tag when typing a task name, e.g. `Study Rust #study`
 - **Crash-safe**: state is written atomically on every change, and running/paused tasks come back on restart
 - **Tray icon**, global hotkey (`Ctrl+Alt+P` by default), and a *Launch on startup* toggle in the tray menu
-
-## Coding exercises
-
-The default `</>` button is a plain **Coding** timer. To get exercises, add `action: exercise` to a preset in
-`config.yaml`:
-
-```yaml
-  - { id: exercise, name: Python exercise, icon: code, kind: work, category: coding, action: exercise }
-```
-
-Clicking that button opens an exercise window while Claude writes your next exercise:
-
-- **Left:** the task (instructions, why it matters for AI engineering, hints one at a time, the tests).
-- **Right:** a VS Code-style editor (Monaco) with autocomplete suggestions turned off, so you write the code yourself.
-  `Ctrl+Enter` runs the tests with your local Python. Code autosaves.
-- **Submit for review** (`Ctrl+Shift+Enter`) runs the tests, then sends your code and the results to Claude.
-  You get a 0–10 score, strengths, issues (shown as squiggles on the lines in the editor), how to improve, and
-  what to study next. If it needs work, Claude points you toward the fix without giving you the solution, so you
-  can resubmit.
-- **Finish** stops the timer. The task is logged as `#coding` work with your score, and the result goes into
-  your exercise history, which Claude uses to plan the next exercise: harder after high scores, back to weak
-  spots after low ones.
-
-Clicking the task card's name reopens the exercise. Clicking the exercise button while one is in progress brings it back.
-
-**Requirements (Windows):**
-- [Claude Code](https://claude.com/claude-code) installed and logged in. Run `claude` once in a terminal.
-  Exercises and reviews go through `claude -p`, so they use your Claude subscription.
-- Python 3 on PATH (`python`), or set `python.command` (e.g. `py`).
-
-Settings are under `claude`, `python` and `learning` in `config.yaml`. Exercises and history are kept in
-`%APPDATA%\ProdBud\exercises\`.
 
 ## Getting started (Windows)
 
@@ -94,7 +59,7 @@ vaultPath: 'C:\Users\you\Documents\MyVault'
 - Config lookup order lives in [`src/main/config.js`](src/main/config.js); the vault writer is
   [`src/main/obsidian.js`](src/main/obsidian.js).
 
-Other settings: `logFolder`, `claude` / `python` / `learning` (exercises), `autoUnfinishMin` (30),
+Other settings: `logFolder`, `autoUnfinishMin` (30),
 `nudgeAfterMin` (10), `hotkey`, and `presets`.
 
 ## What gets written to the vault
@@ -134,9 +99,7 @@ npm test
 |---|---|
 | `src/main/store.js` | Task/break state machine (segments, nap, interrupts, stats); pure and unit-tested |
 | `src/main/obsidian.js` | Per-day `prod_data` log file and stats note |
-| `src/main/exercises.js` | Exercise curriculum, prompts, Python test runner, history |
-| `src/main/claude.js` | Calls Claude through the Claude Code CLI (`claude -p` with a JSON schema) |
 | `src/main/main.js` | Electron windows, IPC, tray, hotkey, persistence |
-| `src/renderer/` | Widget, task card, exercise window, and motivator character (inline SVG) |
+| `src/renderer/` | Widget, task card, and motivator character (inline SVG) |
 
 App state is kept in `%APPDATA%\ProdBud\state.json`.
