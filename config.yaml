@@ -22,7 +22,7 @@ nudgeAfterMin: 10
 # Global hotkey that opens the widget and focuses the task name field.
 hotkey: 'Control+Alt+P'
 
-# Coding exercises (the </> preset). Claude writes Python exercises along an
+# Coding exercises (presets with "action: exercise"). Claude writes Python exercises along an
 # AI-engineering curriculum and reviews your solutions through the Claude Code CLI,
 # so it uses your Claude subscription. Run `claude` once in a terminal to log in.
 claude:
@@ -36,10 +36,10 @@ learning:
 
 # One-click preset tasks. kind: work (counts toward Tasks done/Duration)
 # or break (counts toward Break time and interrupts running work).
-# action: exercise opens a Claude-reviewed Python exercise instead of a plain timer.
+# Add "action: exercise" to a preset to make it open a Claude-reviewed Python exercise instead.
 # icons: dish, shirt, book, broom, code, coffee, dumbbell, controller, tv, music
 presets:
   - { id: dishes,   name: Wash dishes,     icon: dish,  kind: work, category: chores }
   - { id: laundry,  name: Laundry,         icon: shirt, kind: work, category: chores }
   - { id: study,    name: Study,           icon: book,  kind: work, category: study }
-  - { id: exercise, name: Python exercise, icon: code,  kind: work, category: coding, action: exercise }
+  - { id: coding,   name: Coding,          icon: code,  kind: work, category: coding }

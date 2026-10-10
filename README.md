@@ -17,7 +17,7 @@ Built with Electron and targeted at Windows. The full spec is in [prodbud_plan.m
   celebrates when you finish
 - **Nap button**: interrupts every running task (they move to *Unfinished*), then counts break time.
   Tap again to wake up, and you'll be offered **Resume all**
-- **Python exercises** (the `</>` preset): Claude writes a Python exercise matched to your level and recent
+- **Python exercises** (optional, off by default): add `action: exercise` to a preset and Claude writes a Python exercise matched to your level and recent
   scores, following an AI-engineering curriculum (idiomatic Python → NumPy → LLM APIs, RAG, agents, evals, ML
   from scratch). See [Coding exercises](#coding-exercises)
 - **Break-kind presets** (`kind: break` in config): get a card and timer, count toward Break time instead of
@@ -31,7 +31,14 @@ Built with Electron and targeted at Windows. The full spec is in [prodbud_plan.m
 
 ## Coding exercises
 
-Click `</>` and an exercise window opens while Claude writes your next exercise:
+The default `</>` button is a plain **Coding** timer. To get exercises, add `action: exercise` to a preset in
+`config.yaml`:
+
+```yaml
+  - { id: exercise, name: Python exercise, icon: code, kind: work, category: coding, action: exercise }
+```
+
+Clicking that button opens an exercise window while Claude writes your next exercise:
 
 - **Left:** the task (instructions, why it matters for AI engineering, hints one at a time, the tests).
 - **Right:** a VS Code-style editor (Monaco) with autocomplete suggestions turned off, so you write the code yourself.
@@ -44,7 +51,7 @@ Click `</>` and an exercise window opens while Claude writes your next exercise:
   your exercise history, which Claude uses to plan the next exercise: harder after high scores, back to weak
   spots after low ones.
 
-Clicking the task card's name reopens the exercise. Clicking `</>` while one is in progress brings it back.
+Clicking the task card's name reopens the exercise. Clicking the exercise button while one is in progress brings it back.
 
 **Requirements (Windows):**
 - [Claude Code](https://claude.com/claude-code) installed and logged in. Run `claude` once in a terminal.
